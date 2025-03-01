@@ -1,0 +1,4 @@
+nicegui
+pywebview
+ollama
+redis

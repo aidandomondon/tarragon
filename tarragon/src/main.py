@@ -1,0 +1,34 @@
+from nicegui import ui, app
+from model.ContentLoader import ContentLoader
+from ContentLoaderMenu import ContentLoaderMenu
+from Chat import Chat
+# import webview
+
+state = {
+    'content_loader': ContentLoader(),
+    'unsent_prompt': '',
+}
+
+with ui.column().classes('w-full h-[calc(100vh-2rem)]'):
+    with ui.tabs().classes('w-full') as tabs:
+        ui.tab('addContent', label='Add Content')
+        ui.tab('chat', label='Chat')
+        ui.tab('settings', label='Settings')
+    with ui.tab_panels(tabs).classes('w-full'):
+        with ui.tab_panel('addContent'):
+            ContentLoaderMenu(state['content_loader'])
+        with ui.tab_panel('chat').classes('w-full'):
+            Chat(state)
+        with ui.tab_panel('settings').classes('w-full'):
+            with ui.column().classes('w-full items-center'):
+                ui.markdown('#Manage Data')
+                ui.button(text='Wipe and kill all assistants').props("color='black' unelevated")
+
+ui.run(title='Tarragon', favicon='../T.ico')
+
+# window = webview.create_window(
+#     'Tarragon', 
+#     url='http://localhost:8080'
+# )
+# window.events.closing += app.shutdown
+# webview.start(lambda _: ui.run(show=False, reload=False), window)
