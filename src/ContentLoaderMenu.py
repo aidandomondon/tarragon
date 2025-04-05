@@ -4,12 +4,12 @@ from model.ContentLoader import ContentLoader
 
 def _on_upload(file: UploadEventArguments, model: ContentLoader):
     ui.notify('Upload successful. Learning...')
-    model.ingest(file.content.read(), file.type)
+    model.ingest(file.name, file.content.read(), file.type)
 
 def ContentLoaderMenu(model: ContentLoader):
     with ui.row().classes('w-full'):
         ui.upload(
-            label='',
+            label='Upload Files',
             multiple=True,
             on_upload=lambda e: _on_upload(e, model),
             on_rejected=lambda _: ui.notify('Error! File upload failed.')

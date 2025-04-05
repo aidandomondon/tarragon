@@ -1,4 +1,5 @@
 {
-    "embedding_model": "nomic-embed-text",
-    "chat_model": "llama3.2"
+    "embedding_model": "all-minilm:22m",
+    "embedding_dim": 384,
+    "chat_model": "llama3.2:1b"
 }

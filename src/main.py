@@ -2,11 +2,13 @@ from nicegui import ui, app
 from model.ContentLoader import ContentLoader
 from ContentLoaderMenu import ContentLoaderMenu
 from Chat import Chat
-# import webview
+from Settings import Settings
 
 state = {
     'content_loader': ContentLoader(),
     'unsent_prompt': '',
+    'chat_history': [],
+    'displayed_chat_history': []
 }
 
 with ui.column().classes('w-full h-[calc(100vh-2rem)]'):
@@ -20,15 +22,11 @@ with ui.column().classes('w-full h-[calc(100vh-2rem)]'):
         with ui.tab_panel('chat').classes('w-full'):
             Chat(state)
         with ui.tab_panel('settings').classes('w-full'):
-            with ui.column().classes('w-full items-center'):
-                ui.markdown('#Manage Data')
-                ui.button(text='Wipe and kill all assistants').props("color='black' unelevated")
+            Settings(state)
 
-ui.run(title='Tarragon', favicon='../T.ico')
-
-# window = webview.create_window(
-#     'Tarragon', 
-#     url='http://localhost:8080'
-# )
-# window.events.closing += app.shutdown
-# webview.start(lambda _: ui.run(show=False, reload=False), window)
+ui.run(
+    title='Tarragon', 
+    favicon='../T.ico', 
+    # native=True, 
+    port=8081
+)
