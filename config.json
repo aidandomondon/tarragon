@@ -1,5 +1,16 @@
 {
-    "embedding_model": "all-minilm:22m",
-    "embedding_dim": 384,
-    "chat_model": "llama3.2:1b"
+    "main_port": 8081,
+    "ollama_port": 11434,
+    "embedding": {
+        "db_port": 6380,
+        "model": "all-minilm:22m",
+        "dim": 384
+    },
+    "chat": {
+        "model": "llama3.2:1b"
+    },
+    "search": {
+        "distance_metric": "COSINE",
+        "top_k": 3
+    }
 }

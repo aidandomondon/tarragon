@@ -13,12 +13,10 @@ class ContentLoader:
 
     def __init__(self) -> None:
         # Client for API of model used to embed content
-        # Default Ollama port is 11434
-        self.embedding_model_client: AsyncClient = AsyncClient('http://localhost:11434')
+        self.embedding_model_client: AsyncClient = AsyncClient(f"http://localhost:{config["ollama_port"]}")
         # Client for API of database used to store embeddings of content
-        self.db_client: Redis = Redis(host='localhost', port=6380, db=0)
-        # Name of hash set in Redis db
-        self.index_name = "embedding_index"
+        self.db_client: Redis = Redis(host='localhost', port=config['embedding']['db_port'], db=0)
+        self.index_name = "embedding_index"     # Name of hash set in Redis db
         self.chunk_size = 300
         self.chunk_overlap_size = 50
         self.index_initialized = False
@@ -58,7 +56,7 @@ class ContentLoader:
     # (Sequence[float]) vector embedding of the given text
     async def _embed(self, text: str) -> Sequence[float]:
         response: EmbedResponse = await self.embedding_model_client.embed(
-            model=config['embedding_model'],
+            model=config['embedding']['model'],
             input=text
         )
         embeddings: Sequence[Sequence[float]] = response.embeddings
@@ -92,7 +90,7 @@ class ContentLoader:
             f"""
             FT.CREATE {self.index_name} ON HASH
             SCHEMA text TEXT
-            embedding VECTOR HNSW 6 DIM {config["embedding_dim"]} TYPE FLOAT32 DISTANCE_METRIC COSINE
+            embedding VECTOR HNSW 6 DIM {config["embedding"]["dim"]} TYPE FLOAT32 DISTANCE_METRIC {config["search"]["distance_metric"]}
             """
         )
 

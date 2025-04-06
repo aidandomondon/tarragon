@@ -1,9 +1,12 @@
 from nicegui import ui
-from model.ContentLoader import ContentLoader
-from ContentLoaderMenu import ContentLoaderMenu
-from Chat import Chat
-from Settings import Settings
+from ui_components.ContentLoaderMenu import ContentLoaderMenu
+from ui_components.Chat import Chat
+from ui_components.Settings import Settings
 from State import State
+from json import loads
+
+with open('./config.json') as file:
+    config = loads(file.read())
 
 state = State()
 
@@ -24,5 +27,5 @@ ui.run(
     title='Tarragon', 
     favicon='../T.ico', 
     native=True, 
-    port=8081
+    port=config["main_port"]
 )

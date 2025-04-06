@@ -1,18 +1,16 @@
+from json import loads
 from State import State
 from nicegui import ui
-from ChatMessage import ChatMessage
+from ui_components.ChatMessage import ChatMessage
 from ollama import AsyncClient, ChatResponse
-from PromptBuilder import PromptBuilder
-import asyncio
 
-MODEL = 'llama3.2:1b'
+with open('./config.json', 'r') as file:
+    config = loads(file.read())
 
 # Sends a message to the chatbot
 async def query_chatbot(state: State):
-    # await asyncio.sleep(5)
-    # return { "message": { "role": "system", "content": "Hi" } }
-    client = AsyncClient(host='http://localhost:11434')
-    return await client.chat(MODEL, state.chat_history)
+    client = AsyncClient(host=f'http://localhost:{config["ollama_port"]}')
+    return await client.chat(config["chat"]["model"], state.chat_history)
 
 async def on_send_message(state: State) -> None:
     # Get user's question
@@ -35,7 +33,7 @@ async def on_send_message(state: State) -> None:
     prepping_question_notifier.spinner = True
     state.chat_history.append({
         "role": "user",
-        "content": await PromptBuilder().build_prompt(message)
+        "content": await state.prompt_builder.build_prompt(message)
     })
     prepping_question_notifier.dismiss()
 
@@ -45,7 +43,7 @@ async def on_send_message(state: State) -> None:
     pacifier.spinner = True
     response: ChatResponse = await query_chatbot(state)
     pacifier.dismiss()
-    
+
 
     # Add LLM response to chat history
     state.displayed_chat_history.append({
