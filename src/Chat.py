@@ -69,6 +69,7 @@ def MessagePane(state: State) -> None:
                 else:
                     with ui.element('div').classes('w-2/3 self-center'):
                         ChatMessage(message["content"], from_bot=True)
+    scroll_area.scroll_to(percent=100)
 
 def PromptPane(state: State) -> None:
     with ui.card().classes('w-2/3 bg-white self-center'):
