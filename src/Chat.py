@@ -1,7 +1,7 @@
 from State import State
 from nicegui import ui
 from ChatMessage import ChatMessage
-from ollama import chat, ChatResponse
+from ollama import AsyncClient, ChatResponse
 from PromptBuilder import PromptBuilder
 import asyncio
 
@@ -9,9 +9,10 @@ MODEL = 'llama3.2:1b'
 
 # Sends a message to the chatbot
 async def query_chatbot(state: State):
-    await asyncio.sleep(5)
-    return { "message": { "role": "system", "content": "Hi" } }
-    # return chat(MODEL, state.chat_history)
+    # await asyncio.sleep(5)
+    # return { "message": { "role": "system", "content": "Hi" } }
+    client = AsyncClient(host='http://localhost:11434')
+    return await client.chat(MODEL, state.chat_history)
 
 async def on_send_message(state: State) -> None:
     # Get user's question
@@ -32,10 +33,10 @@ async def on_send_message(state: State) -> None:
     # and query the LLM for a response
     prepping_question_notifier = ui.notification("Processing question...")
     prepping_question_notifier.spinner = True
-    # state.chat_history.append({
-    #     "role": "user",
-    #     "content": await PromptBuilder().build_prompt(message)
-    # })
+    state.chat_history.append({
+        "role": "user",
+        "content": await PromptBuilder().build_prompt(message)
+    })
     prepping_question_notifier.dismiss()
 
 
@@ -60,7 +61,7 @@ async def on_send_message(state: State) -> None:
 @ui.refreshable
 def MessagePane(state: State) -> None:
     with ui.column().classes('fit col'):
-        with ui.scroll_area().classes('h-full'):
+        with ui.scroll_area().classes('h-full') as scroll_area:
             for message in state.displayed_chat_history:
                 if message["role"] == "user":
                     with ui.element('div').classes('w-2/3 self-center'):

@@ -6,16 +6,6 @@ from Settings import Settings
 from State import State
 
 state = State()
-state.displayed_chat_history = [
-    {
-        "role": "user",
-        "content": "h\n\n\n\nhh\n\n\n\nhh\n\n\n\nhh\n\n\n\nh"
-    },
-    {
-        "role": "system",
-        "content": "h\n\n\n\nhh\n\n\n\nhh\n\n\n\nhh\n\n\n\nh"
-    }
-]
 
 with ui.column().classes('w-full h-[calc(100vh-2rem)] overscroll-none'):
     with ui.tabs().classes('w-full') as tabs:

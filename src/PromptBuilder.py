@@ -1,10 +1,11 @@
 from typing import Sequence
 from textwrap import dedent
-from redis import Redis
+from redis.asyncio import Redis
 from redis.commands.search.query import Query
 import numpy as np
 from ollama import AsyncClient, EmbedResponse
 from json import loads
+from nicegui.ui import notification
 
 with open('./config.json', 'r') as file:
     config = loads(file.read())
@@ -18,12 +19,15 @@ class PromptBuilder():
         self.index_name = "embedding_index"
 
     async def embed_query(self, query: str) -> Sequence[float]:
-        print("Embedding query...")
+
+        processing_question_notifier = notification('Processing question...')
+        processing_question_notifier.spinner = True
         response: EmbedResponse = await self.embed_client.embed(
             model=config['embedding_model'],
             input=query
         )
-        print("Query embedded")
+        processing_question_notifier.dismiss()
+
         embeddings: Sequence[Sequence[float]] = response.embeddings
         if len(embeddings) == 1:
             return embeddings[0]
@@ -35,7 +39,6 @@ class PromptBuilder():
         """
         Search for the given embedding in Redis.
         """
-        print("Searching for matching documents...")
         # Embed query in vector space
         query_embedding: Sequence[float] = await self.embed_query(query)
 
@@ -55,9 +58,12 @@ class PromptBuilder():
             )
 
             # Perform the search
-            results = self.db_client.ft(self.index_name).search(
+            search_notifier = notification("Searching documents for relevant info...")
+            search_notifier.spinner = True
+            results = await self.db_client.ft(self.index_name).search(
                 q, query_params={"vec": query_vector}
             )
+            search_notifier.dismiss()
 
             # Transform results into the expected format
             top_results = [result.chunk for result in results.docs][:self.top_k]
