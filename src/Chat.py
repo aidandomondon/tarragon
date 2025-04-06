@@ -1,3 +1,4 @@
+from State import State
 from nicegui import ui
 from ChatMessage import ChatMessage
 from ollama import chat, ChatResponse
@@ -7,60 +8,68 @@ import asyncio
 MODEL = 'llama3.2:1b'
 
 # Sends a message to the chatbot
-async def query_chatbot(state: dict):
-    await asyncio.sleep(5)
-    return { "message": { "role": "system", "content": "Hi" } }
-    # return chat(MODEL, state["chat_history"])
+async def query_chatbot(state: State):
+    # await asyncio.sleep(5)
+    # return { "message": { "role": "system", "content": "Hi" } }
+    return chat(MODEL, state.chat_history)
 
-async def on_send_message(state) -> None:
-        # Get user's question
-        message = state['unsent_prompt']
-        
-        # Clear new message entry field 
-        state['unsent_prompt'] = ''
+async def on_send_message(state: State) -> None:
+    # Get user's question
+    message = state.unsent_prompt
 
-        # Update displayed chat history with user's new question
-        state["displayed_chat_history"].append({
-            "role": "user",
-            "content": message
-        })
+    # Clear new message entry field 
+    state.unsent_prompt = ''
 
-        # Update actual chat history with user's new question
-        # and query the LLM for a response
-        state["chat_history"].append({
-            "role": "user",
-            "content": PromptBuilder().build_prompt(message)
-        })
+    # Update displayed chat history with user's new question
+    state.displayed_chat_history.append({
+        "role": "user",
+        "content": message
+    })
+    MessagePane.refresh()
 
-        pacifier = ui.notification("Thinking...")
-        pacifier.spinner = True
-        
-        # Send message to chatbot
-        response: ChatResponse = await query_chatbot(state)
 
-        pacifier.spinner = False
-        pacifier.dismiss()
+    # Update actual chat history with user's new question
+    # and query the LLM for a response
+    prepping_question_notifier = ui.notification("Processing question...")
+    prepping_question_notifier.spinner = True
+    state.chat_history.append({
+        "role": "user",
+        "content": await PromptBuilder().build_prompt(message)
+    })
+    prepping_question_notifier.dismiss()
 
-        # Add LLM response to chat history
-        state["displayed_chat_history"].append({
-            "role": response["message"]["role"],
-            "content": response["message"]["content"]
-        })
-        state["chat_history"].append({
-            "role": response["message"]["role"],
-            "content": response["message"]["content"]
-        })
 
-def Chat(state) -> None:
+    # Send message to chatbot
+    pacifier = ui.notification("Thinking...")
+    pacifier.spinner = True
+    response: ChatResponse = await query_chatbot(state)
+    pacifier.dismiss()
+    
+
+    # Add LLM response to chat history
+    state.displayed_chat_history.append({
+        "role": response["message"]["role"],
+        "content": response["message"]["content"]
+    })
+    state.chat_history.append({
+        "role": response["message"]["role"],
+        "content": response["message"]["content"]
+    })
+    MessagePane.refresh()
+
+@ui.refreshable
+def MessagePane(state: State) -> None:
+    with ui.scroll_area().classes('w-full h-full'):
+        for message in state.displayed_chat_history:
+            if message["role"] == "user":
+                ChatMessage(message["content"], from_bot=False)
+            else:
+                ChatMessage(message["content"], from_bot=True)
+
+def Chat(state: State) -> None:
 
     with ui.column().classes('w-full h-[calc(100vh-2rem)]'):
-        with ui.scroll_area().classes('w-full h-full'):
-            for message in state["displayed_chat_history"]:
-                if message["role"] == "user":
-                    ChatMessage(message["content"], from_bot=False)
-                else:
-                    ChatMessage(message["content"], from_bot=True)
-                    
+        MessagePane(state)
         with ui.card().classes('w-[calc(100vh*0.85)] absolute bottom-1 bg-white self-center'):
             with ui.row(wrap=False).classes('w-full'):
                 ui.textarea() \

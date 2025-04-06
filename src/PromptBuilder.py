@@ -3,7 +3,7 @@ from textwrap import dedent
 from redis import Redis
 from redis.commands.search.query import Query
 import numpy as np
-from ollama import Client, EmbedResponse
+from ollama import AsyncClient, EmbedResponse
 from json import loads
 
 with open('./config.json', 'r') as file:
@@ -13,16 +13,17 @@ class PromptBuilder():
 
     def __init__(self):
         self.db_client = Redis(port=6380)
-        self.embed_client = Client('http://localhost:11434')
+        self.embed_client = AsyncClient('http://localhost:11434')
         self.top_k = 3
         self.index_name = "embedding_index"
 
-    def embed_query(self, query: str) -> Sequence[float]:
+    async def embed_query(self, query: str) -> Sequence[float]:
         print("Embedding query...")
-        response: EmbedResponse = self.embed_client.embed(
+        response: EmbedResponse = await self.embed_client.embed(
             model=config['embedding_model'],
             input=query
         )
+        print("Query embedded")
         embeddings: Sequence[Sequence[float]] = response.embeddings
         if len(embeddings) == 1:
             return embeddings[0]
@@ -30,13 +31,13 @@ class PromptBuilder():
             raise Exception(
                 f'Received {len(embeddings)} from API. Expected exactly 1 embedding.')
 
-    def retrieve_similar_chunks(self, query: str) -> list[str]:
+    async def retrieve_similar_chunks(self, query: str) -> list[str]:
         """
         Search for the given embedding in Redis.
         """
         print("Searching for matching documents...")
         # Embed query in vector space
-        query_embedding: Sequence[float] = self.embed_query(query)
+        query_embedding: Sequence[float] = await self.embed_query(query)
 
         # Convert embedding to bytes for Redis search
         query_vector = np.array(query_embedding, dtype=np.float32).tobytes()
@@ -66,15 +67,15 @@ class PromptBuilder():
             print(f"Search error: {e}")
             return []
 
-    def build_context(self, query: str) -> str:
-        similar_chunks = self.retrieve_similar_chunks(query)
+    async def build_context(self, query: str) -> str:
+        similar_chunks = await self.retrieve_similar_chunks(query)
         context_string = ""
         for i, embedding in enumerate(similar_chunks):
             context_string += f"\nDocument {i+1}:\n{embedding}\n"
         return context_string
 
-    def build_prompt(self, query: str) -> str:
-        context = self.build_context(query)
+    async def build_prompt(self, query: str) -> str:
+        context = await self.build_context(query)
         prompt = dedent(f"""\
                             You are a helpful AI assistant. 
                             Use the following context to answer the query as accurately as possible. If the context is 
