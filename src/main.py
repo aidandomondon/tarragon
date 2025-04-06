@@ -14,7 +14,7 @@ with ui.column().classes('w-full h-[calc(100vh-2rem)] overscroll-none'):
         ui.tab('settings', label='Settings')
     with ui.tab_panels(tabs).classes('w-full h-full'):
         with ui.tab_panel('addContent'):
-            ContentLoaderMenu(state.content_loader)
+            ContentLoaderMenu(state)
         with ui.tab_panel('chat').classes('w-full h-full'):
             Chat(state)
         with ui.tab_panel('settings').classes('w-full'):
@@ -23,6 +23,6 @@ with ui.column().classes('w-full h-[calc(100vh-2rem)] overscroll-none'):
 ui.run(
     title='Tarragon', 
     favicon='../T.ico', 
-    # native=True, 
+    native=True, 
     port=8081
 )

@@ -71,6 +71,9 @@ def MessagePane(state: State) -> None:
                         ChatMessage(message["content"], from_bot=True)
     scroll_area.scroll_to(percent=100)
 
+def refresh_chat():
+    MessagePane.refresh()
+
 def PromptPane(state: State) -> None:
     with ui.card().classes('w-2/3 bg-white self-center'):
         with ui.row(wrap=False).classes('w-full pt-0'):
@@ -92,3 +95,4 @@ def Chat(state: State) -> None:
     with ui.column().classes('w-full h-full gap-0'):
         MessagePane(state)
         PromptPane(state)
+    state.refresh_chat = refresh_chat
