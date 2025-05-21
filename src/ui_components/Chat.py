@@ -2,15 +2,24 @@ from json import loads
 from State import State
 from nicegui import ui
 from ui_components.ChatMessage import ChatMessage
-from ollama import AsyncClient, ChatResponse
+from openai import AsyncOpenAI
+from openai.types.chat import ChatCompletion
+from openai.types.chat.chat_completion import Choice
 
 with open('./config.json', 'r') as file:
     config = loads(file.read())
 
 # Sends a message to the chatbot
-async def query_chatbot(state: State):
-    client = AsyncClient(host=f'http://localhost:{config["ollama_port"]}')
-    return await client.chat(config["chat"]["model"], state.chat_history)
+async def query_chatbot(state: State) -> Choice:
+    client = AsyncOpenAI(
+        base_url = f'http://localhost:{config["llm_port"]}/v1',
+        api_key='sk-no-key-required'
+    )
+    completion: ChatCompletion = await client.chat.completions.create(
+        model = config["chat"]["model"], 
+        messages = state.chat_history
+    )
+    return completion.choices[0]
 
 async def on_send_message(state: State) -> None:
     # Get user's question
@@ -33,7 +42,7 @@ async def on_send_message(state: State) -> None:
     prepping_question_notifier.spinner = True
     state.chat_history.append({
         "role": "user",
-        "content": await state.prompt_builder.build_prompt(message)
+        "content": state.prompt_builder.build_prompt(message)
     })
     prepping_question_notifier.dismiss()
 
@@ -41,18 +50,20 @@ async def on_send_message(state: State) -> None:
     # Send message to chatbot
     pacifier = ui.notification("Thinking...")
     pacifier.spinner = True
-    response: ChatResponse = await query_chatbot(state)
+    response: Choice = await query_chatbot(state)
     pacifier.dismiss()
 
 
     # Add LLM response to chat history
+    response_content = response.message.content
+    response_content = response_content[:response_content.find("<|eot_id|>")]
     state.displayed_chat_history.append({
-        "role": response["message"]["role"],
-        "content": response["message"]["content"]
+        "role": response.message.role,
+        "content": response_content
     })
     state.chat_history.append({
-        "role": response["message"]["role"],
-        "content": response["message"]["content"]
+        "role": response.message.role,
+        "content": response_content
     })
     MessagePane.refresh()
 

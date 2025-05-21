@@ -3,10 +3,11 @@ from nicegui.events import UploadEventArguments
 from model.ContentLoader import ContentLoader
 from State import State
 
-async def _on_upload(file: UploadEventArguments, model: ContentLoader):
+async def _on_upload(file: UploadEventArguments, model: ContentLoader, state: State):
     upload_notifier = ui.notification('Upload successful. Storing...')
     upload_notifier.spinner = True
     await model.ingest(file.name, file.content.read(), file.type)
+    state.db_client.reinit_db_client()
     upload_notifier.dismiss()
 
 def ContentLoaderMenu(state: State):
@@ -15,7 +16,7 @@ def ContentLoaderMenu(state: State):
         upload = ui.upload(
             label='Upload Files',
             multiple=True,
-            on_upload=lambda e: _on_upload(e, model),
+            on_upload=lambda e: _on_upload(e, model, state),
             on_rejected=lambda _: ui.notify('Error! File upload failed.')
         ).classes('w-full').props("accept='.txt, .pdf' color='black' flat bordered")
         state.clear_uploads = upload.reset

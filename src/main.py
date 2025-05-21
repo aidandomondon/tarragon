@@ -1,3 +1,5 @@
+import multiprocessing
+multiprocessing.set_start_method("spawn", force=True)
 from nicegui import ui
 from ui_components.ContentLoaderMenu import ContentLoaderMenu
 from ui_components.Chat import Chat
@@ -26,6 +28,5 @@ with ui.column().classes('w-full h-[calc(100vh-2rem)] overscroll-none'):
 ui.run(
     title='Tarragon', 
     favicon='../T.ico', 
-    native=True, 
-    port=config["main_port"]
+    native=True
 )

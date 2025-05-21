@@ -1,9 +1,15 @@
 from nicegui import ui
+from nicegui.elements.dialog import Dialog
 from State import State
 
 def open_kill_assistant_dialogue(state):
 
-    async def _clear_assistant(state: State):
+    def _handle_clear_assistant(state: State, dialogue: Dialog) -> None:
+        _clear_assistant(state)
+        state.db_client.reinit_db_client()
+        dialogue.close()
+
+    def _clear_assistant(state: State):
         # Wipe chat
         chat_notifier = ui.notification("Wiping chat...")
         chat_notifier.spinner = True
@@ -18,23 +24,24 @@ def open_kill_assistant_dialogue(state):
         # Wipe data
         wiping_notifier = ui.notification("Wiping data and re-initializing...")
         wiping_notifier.spinner = True
-        await state.content_loader.clean_and_reinit()
+        state.db_client.clean_and_reinit()
         wiping_notifier.dismiss()
         ui.notify("Data wipe successful.")
+
 
     with ui.dialog() as dialogue:
         with ui.card():
             with ui.column().classes('items-center'):
                 ui.label(
                     "Are you sure you want to wipe and kill the assistant? " \
-                    "This will remove all documents you have uploaded" \
-                    "and erase the current chat history."
+                    "The application will no longer have any of the documents " \
+                    "you have uploaded and the current chat history will be erased."
                 )
                 with ui.row():
                     ui.button(
                         text="Kill assistant",
                         color = 'red',
-                        on_click = lambda _: _clear_assistant(state)
+                        on_click = lambda _: _handle_clear_assistant(state, dialogue)
                     )
                     ui.button(
                         text = "Cancel",

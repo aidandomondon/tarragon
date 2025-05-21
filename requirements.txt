@@ -1,5 +1,8 @@
+pywebview
 nicegui
 ollama
-redis
 numpy
 pymupdf
+openai
+requests
+chromadb
