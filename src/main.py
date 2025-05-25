@@ -26,6 +26,5 @@ with ui.column().classes('w-full h-[calc(100vh-2rem)] overscroll-none'):
 ui.run(
     title='Tarragon', 
     favicon='../T.ico', 
-    native=True, 
-    port=config["main_port"]
+    native=True
 )

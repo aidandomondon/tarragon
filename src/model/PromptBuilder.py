@@ -1,86 +1,66 @@
 from typing import Sequence
 from textwrap import dedent
-from redis.asyncio import Redis
-from redis.commands.search.query import Query
-import numpy as np
-from ollama import AsyncClient, EmbedResponse
+from model.Embeddor import Embeddor
 from json import loads
 from nicegui.ui import notification
+from model.DbClient import DbClient
 
 with open('./config.json', 'r') as file:
     config = loads(file.read())
 
 class PromptBuilder():
 
-    def __init__(self):
-        self.db_client = Redis(port=config["embedding"]["db_port"])
-        self.embed_client = AsyncClient(f'http://localhost:{config["ollama_port"]}')
-        self.index_name = "embedding_index"
+    def __init__(self, db_client: DbClient):
+        self.db_client = db_client
 
-    async def _embed_query(self, query: str) -> Sequence[float]:
 
+    def _embed_query(self, query: str) -> Sequence[float]:
         processing_question_notifier = notification('Processing question...')
         processing_question_notifier.spinner = True
-        response: EmbedResponse = await self.embed_client.embed(
-            model=config['embedding']['model'],
-            input=query
-        )
+        response: Sequence[float] = Embeddor().__call__(query)
         processing_question_notifier.dismiss()
+        return response
 
-        embeddings: Sequence[Sequence[float]] = response.embeddings
-        if len(embeddings) == 1:
-            return embeddings[0]
-        else:
-            raise Exception(
-                f'Received {len(embeddings)} from API. Expected exactly 1 embedding.')
-
-    async def _retrieve_similar_chunks(self, query: str) -> list[str]:
+    def _retrieve_similar_chunks(self, query: str) -> list[str]:
         """
-        Search for the given embedding in Redis.
+        Search for the given embedding in the vector db.
         """
-        # Embed query in vector space
-        query_embedding: Sequence[float] = await self._embed_query(query)
-
-        # Convert embedding to bytes for Redis search
-        query_vector = np.array(query_embedding, dtype=np.float32).tobytes()
-
         try:
-            # Construct the vector similarity search query
-            # Use a more standard RediSearch vector search syntax
-            # q = Query("*").sort_by("embedding", query_vector)
 
-            q = (
-                Query("*=>[KNN 5 @embedding $vec AS vector_distance]")
-                .sort_by("vector_distance")
-                .return_fields("chunk", "vector_distance")
-                .dialect(2)
-            )
-
-            # Perform the search
+            # Search for 5 documents closest to query.
+            # Note: may have to make async and display waiting message for UX
+            # if querying takes a long time.
             search_notifier = notification("Searching documents for relevant info...")
             search_notifier.spinner = True
-            results = await self.db_client.ft(self.index_name).search(
-                q, query_params={"vec": query_vector}
+            query_result = self.db_client.db_collection.query(
+                query_texts=[query],
+                n_results=5,
+                include=["metadatas", "distances"]
             )
+            results = query_result
             search_notifier.dismiss()
+            # sort by vector distance
+            print("RESULTS: \n\n")
+            print(results)
 
             # Transform results into the expected format
-            top_results = [result.chunk for result in results.docs][:config["search"]["top_k"]]
+            top_results = [metadata['chunk'] for metadata in results['metadatas'][0]][:config["search"]["top_k"]]
             return top_results
 
         except Exception as e:
             print(f"Search error: {e}")
             return []
 
-    async def _build_context(self, query: str) -> str:
-        similar_chunks = await self._retrieve_similar_chunks(query)
+    def _build_context(self, query: str) -> str:
+        similar_chunks = self._retrieve_similar_chunks(query)
         context_string = ""
         for i, embedding in enumerate(similar_chunks):
             context_string += f"\nDocument {i+1}:\n{embedding}\n"
+        print(f"Context String: {context_string}")
         return context_string
 
-    async def build_prompt(self, query: str) -> str:
-        context = await self._build_context(query)
+    def build_prompt(self, query: str) -> str:
+        context = self._build_context(query)
         prompt = dedent(f"""\
                             You are a helpful AI assistant. 
                             Use the following context to answer the query as accurately as possible. If the context is 
@@ -92,5 +72,4 @@ class PromptBuilder():
                             Query: {query}
 
                             Answer:""")
-            
         return prompt

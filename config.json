@@ -1,16 +1,16 @@
 {
-    "main_port": 8081,
-    "ollama_port": 11434,
+    "llm_port": 8081,
     "embedding": {
-        "db_port": 6380,
-        "model": "all-minilm:22m",
-        "dim": 384
+        "collection_name": "embedding_index",
+        "db_path": "./tarragon_saved_data/",
+        "model_port": 8082,
+        "dim": 512
     },
     "chat": {
-        "model": "llama3.2:1b"
+        "model": "LLaMA_CPP"
     },
     "search": {
-        "distance_metric": "COSINE",
+        "distance_metric": "cosine",
         "top_k": 3
     }
 }

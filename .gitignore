@@ -1,0 +1,8 @@
+**/__pycache__
+.venv
+.mypy_cache
+tarragon_saved_data/*
+Llama-3.2-1B-Instruct.Q6_K.llamafile
+llama.log
+llamafiler
+mxbai-embed-large-v1-f16.gguf
