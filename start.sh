@@ -18,3 +18,6 @@ if [[ "$VIRTUAL_ENV" != "" ]]
 then 
     python ./src/main.py
 fi
+
+# Kill the LLM and embedding model on script termination
+trap 'kill $llm_pid; kill $embedding_model_pid' SIGINT SIGTERM

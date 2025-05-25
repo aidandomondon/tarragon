@@ -1,5 +1,3 @@
-import multiprocessing
-multiprocessing.set_start_method("spawn", force=True)
 from nicegui import ui
 from ui_components.ContentLoaderMenu import ContentLoaderMenu
 from ui_components.Chat import Chat
